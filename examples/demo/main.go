@@ -36,6 +36,9 @@ func main() {
 	// 演示插件系统
 	runPluginDemonstrations()
 
+	// 演示分页功能
+	demonstratePaginationFeatures()
+
 	fmt.Println("\n================================")
 	fmt.Println("🎉 所有演示完成！")
 }
@@ -282,4 +285,14 @@ func demonstrateDataTypes() {
 
 	// 演示时间格式化
 	fmt.Printf("创建时间格式化: %s\n", user.CreateAt.Format("2006-01-02 15:04:05"))
+}
+
+// demonstratePaginationFeatures 演示分页功能
+func demonstratePaginationFeatures() {
+	fmt.Println("\n=== 分页功能演示 ===")
+	
+	// 调用分页示例
+	examples.PaginationExamples()
+	
+	fmt.Println("✅ 分页功能演示完成")
 }
