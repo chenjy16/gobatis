@@ -1,19 +1,19 @@
 # gobatis
 
-一个类似 MyBatis 的 Go 语言 ORM 框架，提供 SQL 与业务逻辑解耦、自动参数绑定、结构体结果映射、插件扩展等功能。
+A MyBatis-like ORM framework for Go, providing SQL-business logic decoupling, automatic parameter binding, struct result mapping, plugin extensions, and more.
 
-## 特性
+## Features
 
-- **SQL 与业务逻辑解耦**：通过 XML 配置文件定义 SQL 语句
-- **自动参数绑定**：支持命名参数（`#{paramName}`）自动绑定
-- **结构体结果映射**：自动将查询结果映射到 Go 结构体
-- **插件扩展系统**：支持分页等插件，可自定义扩展
-- **动态代理**：自动生成 Mapper 接口代理，简化数据访问
-- **参数绑定**：支持命名参数和结构体参数绑定
+- **SQL-Business Logic Decoupling**: Define SQL statements through XML configuration files
+- **Automatic Parameter Binding**: Support for automatic binding of named parameters (`#{paramName}`)
+- **Struct Result Mapping**: Automatically map query results to Go structs
+- **Plugin Extension System**: Support for plugins like pagination with custom extensions
+- **Dynamic Proxy**: Automatically generate Mapper interface proxies to simplify data access
+- **Parameter Binding**: Support for named parameters and struct parameter binding
 
-## 快速开始
+## Quick Start
 
-### 1. 定义实体
+### 1. Define Entity
 
 ```go
 type User struct {
@@ -24,7 +24,7 @@ type User struct {
 }
 ```
 
-### 2. 定义 Mapper 接口
+### 2. Define Mapper Interface
 
 ```go
 type UserMapper interface {
@@ -38,7 +38,7 @@ type UserMapper interface {
 }
 ```
 
-### 3. 配置 XML Mapper
+### 3. Configure XML Mapper
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -62,7 +62,7 @@ type UserMapper interface {
 </mapper>
 ```
 
-### 4. 使用框架
+### 4. Using the Framework
 
 ```go
 package main
@@ -75,35 +75,35 @@ import (
 )
 
 func main() {
-    // 创建配置
+    // Create configuration
     config := gobatis.NewConfiguration()
     
-    // 设置数据源
+    // Set data source
     err := config.SetDataSource("mysql", "user:password@tcp(localhost:3306)/dbname?parseTime=true")
     if err != nil {
         panic(err)
     }
     
-    // 添加 Mapper XML
+    // Add Mapper XML
     err = config.AddMapperXML("examples/user_mapper.xml")
     if err != nil {
         panic(err)
     }
     
-    // 配置插件
+    // Configure plugins
     pluginManager := plugins.NewPluginBuilder().
         WithCustomPlugin(plugins.NewPaginationPlugin()).
         Build()
     
-    // 创建 Session
+    // Create Session
     factory := gobatis.NewSqlSessionFactory(config)
     session := factory.OpenSession()
     defer session.Close()
     
-    // 获取 Mapper 代理
+    // Get Mapper proxy
     userMapper := session.GetMapper((*examples.UserMapper)(nil)).(examples.UserMapper)
     
-    // 使用 Mapper 进行 CRUD 操作
+    // Use Mapper for CRUD operations
     user, err := userMapper.GetUserById(1)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
@@ -111,23 +111,23 @@ func main() {
         fmt.Printf("User: %+v\n", user)
     }
     
-    // 分页查询示例
+    // Pagination query example
     pageReq := &plugins.PageRequest{Page: 1, Size: 10}
     // pageResult := userService.SearchUsersPaginated("john", pageReq)
 }
 ```
 
-## 插件系统详解
+## Plugin System Overview
 
 
 
-### 分页插件
+### Pagination Plugin
 
-分页插件可以自动拦截带有分页参数的查询，并返回分页结果。
+The pagination plugin can automatically intercept queries with pagination parameters and return paginated results.
 
-**1. 定义 Mapper 方法**
+**1. Define Mapper Method**
 
-在 Mapper 接口中定义一个方法，该方法的参数包含 `*plugins.PageRequest`。
+Define a method in the Mapper interface whose parameters include `*plugins.PageRequest`.
 
 ```go
 type UserMapper interface {
@@ -136,9 +136,9 @@ type UserMapper interface {
 }
 ```
 
-**2. 配置 Mapper XML**
+**2. Configure Mapper XML**
 
-对应的 XML 语句不需要包含分页逻辑。
+The corresponding XML statement does not need to include pagination logic.
 
 ```xml
 <select id="FindUsers" resultType="User">
@@ -148,36 +148,36 @@ type UserMapper interface {
 </select>
 ```
 
-**3. 调用分页查询**
+**3. Call Pagination Query**
 
-在业务代码中，创建 `PageRequest` 对象并调用 Mapper 方法。
+In business code, create a `PageRequest` object and call the Mapper method.
 
 ```go
-// 添加分页插件
+// Add pagination plugin
 pluginManager := plugins.NewPluginBuilder().
     WithCustomPlugin(plugins.NewPaginationPlugin()).
     Build()
 
-// ... (获取 session 和 mapper)
+// ... (get session and mapper)
 
-// 创建分页请求
+// Create pagination request
 pageReq := &plugins.PageRequest{
-    Page:    1,        // 页码（从1开始）
-    Size:    10,       // 每页大小
-    SortBy:  "id",     // 排序字段
-    SortDir: "ASC",    // 排序方向
+    Page:    1,        // Page number (starting from 1)
+    Size:    10,       // Page size
+    SortBy:  "id",     // Sort field
+    SortDir: "ASC",    // Sort direction
 }
 
-// 执行分页查询
-// 插件会自动修改 SQL 添加 LIMIT/OFFSET 和 ORDER BY
-// 返回的结果类型是 *plugins.PageResult
+// Execute pagination query
+// Plugin will automatically modify SQL to add LIMIT/OFFSET and ORDER BY
+// Return type is *plugins.PageResult
 pageResult, err := userMapper.FindUsers("test", pageReq)
 if err != nil {
     // ... handle error
 }
 
-// 处理分页结果
-fmt.Printf("当前页: %d, 总页数: %d, 总记录数: %d\n", 
+// Handle pagination results
+fmt.Printf("Current page: %d, Total pages: %d, Total records: %d\n", 
     pageResult.Page, pageResult.TotalPages, pageResult.Total)
 
 for _, user := range pageResult.Data.([]*User) {
@@ -185,14 +185,14 @@ for _, user := range pageResult.Data.([]*User) {
 }
 ```
 
-分页插件会自动完成以下工作：
-1.  执行 `COUNT(*)` 查询获取总记录数。
-2.  修改原始 SQL，添加 `ORDER BY`、`LIMIT` 和 `OFFSET` 子句。
-3.  执行查询并返回 `*plugins.PageResult`，其中包含了分页数据和元信息。
+The pagination plugin automatically completes the following tasks:
+1.  Execute `COUNT(*)` query to get the total number of records.
+2.  Modify the original SQL to add `ORDER BY`, `LIMIT`, and `OFFSET` clauses.
+3.  Execute the query and return `*plugins.PageResult`, which contains paginated data and metadata.
 
 
 
-### 自定义插件
+### Custom Plugin
 
 ```go
 type MyPlugin struct {
@@ -200,172 +200,171 @@ type MyPlugin struct {
 }
 
 func (p *MyPlugin) Intercept(invocation *plugins.Invocation) (interface{}, error) {
-    // 前置处理
+    // Pre-processing
     fmt.Println("Before method execution")
     
-    // 调用下一个插件或目标方法
+    // Call next plugin or target method
     result, err := invocation.Proceed()
     
-    // 后置处理
+    // Post-processing
     fmt.Println("After method execution")
     
     return result, err
 }
 
 func (p *MyPlugin) SetProperties(properties map[string]string) {
-    // 设置插件属性
+    // Set plugin properties
 }
 
 func (p *MyPlugin) GetOrder() int {
-    return p.order // 返回执行顺序
+    return p.order // Return execution order
 }
 ```
 
-## 运行测试
+## Running Tests
 
 ```bash
-# 运行所有测试
+# Run all tests
 go test -v ./...
 
-# 运行插件测试
+# Run plugin tests
 go test -v ./plugins
 ```
 
-## 总结
+## Summary
 
-本项目成功实现了一个功能完整的 Go 版本 MyBatis 框架，包含以下核心特性：
+This project successfully implements a fully functional Go version of the MyBatis framework, including the following core features:
 
-### ✅ 已实现功能
+### ✅ Implemented Features
 
-1. **配置管理系统**
-   - XML 配置文件解析
-   - 数据源配置
-   - Mapper 语句管理
+1. **Configuration Management System**
+   - XML configuration file parsing
+   - Data source configuration
+   - Mapper statement management
 
-2. **SQL 会话管理**
-   - SqlSession 接口
-   - 连接池管理
-   - 事务控制
+2. **SQL Session Management**
+   - SqlSession interface
+   - Connection pool management
+   - Transaction control
 
-3. **动态代理系统**
-   - 接口自动代理
-   - 方法调用路由
-   - 参数绑定
+3. **Dynamic Proxy System**
+   - Automatic interface proxy
+   - Method call routing
+   - Parameter binding
 
-4. **插件扩展系统**
-   - 分页插件（自动分页查询和计数）
-   - 插件管理器（插件注册、排序、执行链）
+4. **Plugin Extension System**
+   - Pagination plugin (automatic pagination queries and counting)
+   - Plugin manager (plugin registration, sorting, execution chain)
 
-5. **参数绑定和结果映射**
-   - 命名参数绑定
-   - 结构体字段映射
-   - 类型转换
+5. **Parameter Binding and Result Mapping**
+   - Named parameter binding
+   - Struct field mapping
+   - Type conversion
 
-### 🎯 技术亮点
+### 🎯 Technical Highlights
 
-- **插件架构**：采用拦截器模式，支持插件链式执行
-- **并发安全**：插件管理器支持并发访问
-- **灵活配置**：支持 XML 配置和代码配置两种方式
-- **测试覆盖**：完整的单元测试和集成测试
-- **性能优化**：连接池、批量操作支持
+- **Plugin Architecture**: Uses interceptor pattern, supports plugin chain execution
+- **Concurrency Safety**: Plugin manager supports concurrent access
+- **Flexible Configuration**: Supports both XML configuration and code configuration
+- **Test Coverage**: Complete unit tests and integration tests
+- **Performance Optimization**: Connection pooling, batch operation support
 
-### 📊 测试结果
+### 📊 Test Results
 
-所有测试用例均通过，包括：
-- 核心功能测试：✅ 7/7 通过
-- 插件系统测试：✅ 6/6 通过
+All test cases pass, including:
+- Core functionality tests: ✅ 7/7 passed
+- Plugin system tests: ✅ 6/6 passed
 
-这个框架为 Go 开发者提供了一个类似 MyBatis 的 ORM 解决方案，具有良好的扩展性和易用性。
+This framework provides Go developers with a MyBatis-like ORM solution with good extensibility and ease of use.
 
-## 核心组件
+## Core Components
 
-### 1. 配置管理 (Configuration)
-- 数据源配置
-- Mapper XML 解析
-- 插件管理
+### 1. Configuration Management (Configuration)
+- Data source configuration
+- Mapper XML parsing
+- Plugin management
 
-### 2. 会话管理 (SqlSession)
-- 数据库连接管理
-- 事务控制
-- Mapper 代理创建
+### 2. Session Management (SqlSession)
+- Database connection management
+- Transaction control
+- Mapper proxy creation
 
-### 3. 参数绑定 (ParameterBinder)
-- 命名参数绑定
-- 结构体字段映射
-- 类型转换
+### 3. Parameter Binding (ParameterBinder)
+- Named parameter binding
+- Struct field mapping
+- Type conversion
 
-### 4. 结果映射 (ResultMapper)
-- 查询结果到结构体映射
-- 字段名转换（camelCase ↔ snake_case）
-- 类型转换
+### 4. Result Mapping (ResultMapper)
+- Query result to struct mapping
+- Field name conversion (camelCase ↔ snake_case)
+- Type conversion
 
-### 5. 动态代理 (MapperProxy)
-- 接口方法代理
-- 方法调用路由
-- 返回值处理
+### 5. Dynamic Proxy (MapperProxy)
+- Interface method proxy
+- Method call routing
+- Return value handling
 
-### 6. SQL 执行器 (Executor)
-- SQL 执行
-- 参数绑定
-- 结果处理
+### 6. SQL Executor (Executor)
+- SQL execution
+- Parameter binding
+- Result processing
 
-### 7. 插件系统 (Plugins)
-- **分页插件**：自动分页查询，支持排序和计数
-- **插件管理器**：插件注册、排序和执行链管理
+### 7. Plugin System (Plugins)
+- **Pagination Plugin**: Automatic pagination queries with sorting and counting support
+- **Plugin Manager**: Plugin registration, sorting, and execution chain management
 
-## 项目结构
+## Project Structure
 
 ```
 gobatis/
-├── binding/              # 参数绑定模块
+├── binding/              # Parameter binding module
 │   └── parameter_binder.go
-├── core/                 # 核心模块
-│   ├── config/          # 配置管理
+├── core/                 # Core modules
+│   ├── config/          # Configuration management
 │   │   └── configuration.go
-│   ├── executor/        # SQL 执行器
+│   ├── executor/        # SQL executor
 │   │   └── executor.go
-│   ├── mapper/          # Mapper 代理
+│   ├── mapper/          # Mapper proxy
 │   │   └── mapper_proxy.go
-│   └── session/         # 会话管理
+│   └── session/         # Session management
 │       └── sql_session.go
-├── plugins/             # 插件系统
-│   ├── manager.go      # 插件管理器
-│   ├── pagination.go   # 分页插件
-│   ├── plugin.go       # 插件接口
-│   └── plugins_test.go # 插件测试
-├── examples/            # 示例代码
-│   ├── user.go         # 用户实体和接口
-│   └── user_mapper.xml # Mapper XML 配置
-├── mapping/             # 结果映射模块
+├── plugins/             # Plugin system
+│   ├── manager.go      # Plugin manager
+│   ├── pagination.go   # Pagination plugin
+│   ├── plugin.go       # Plugin interface
+│   └── plugins_test.go # Plugin tests
+├── examples/            # Example code
+│   ├── user.go         # User entity and interface
+│   └── user_mapper.xml # Mapper XML configuration
+├── mapping/             # Result mapping module
 │   └── result_mapper.go
-├── gobatis.go          # 主入口文件
-├── gobatis_test.go     # 测试文件
-├── core_test.go        # 核心功能测试
-├── go.mod              # Go 模块文件
-└── README.md           # 项目文档
+├── gobatis.go          # Main entry file
+├── gobatis_test.go     # Test file
+├── core_test.go        # Core functionality tests
+├── go.mod              # Go module file
+└── README.md           # Project documentation
 ```
 
-## 设计特点
+## Design Features
 
-1. **模块化设计**：各个组件职责清晰，便于扩展和维护
-2. **接口驱动**：通过接口定义组件契约，支持不同实现
-3. **反射机制**：利用 Go 的反射特性实现动态代理和类型转换
-4. **XML 配置**：支持 XML 配置文件定义 SQL 语句
-5. **插件架构**：预留插件接口，支持功能扩展
+1. **Modular Design**: Clear component responsibilities, easy to extend and maintain
+2. **Interface-Driven**: Define component contracts through interfaces, support different implementations
+3. **Reflection Mechanism**: Utilize Go's reflection features for dynamic proxy and type conversion
+4. **XML Configuration**: Support XML configuration files to define SQL statements
+5. **Plugin Architecture**: Reserved plugin interfaces, support functional extensions
 
-## 技术实现
+## Technical Implementation
 
-- **动态代理**：使用 `reflect.MakeFunc` 创建接口代理
-- **SQL 解析**：支持命名参数解析和绑定
-- **结果映射**：自动映射查询结果到 Go 结构体
+- **Dynamic Proxy**: Use `reflect.MakeFunc` to create interface proxies
+- **SQL Parsing**: Support named parameter parsing and binding
+- **Result Mapping**: Automatically map query results to Go structs
+- **Connection Pool**: Connection pool management based on `database/sql`
 
-- **连接池**：基于 `database/sql` 的连接池管理
+## Dependencies
 
-## 依赖
+- `database/sql`: Go standard database interface
+- `github.com/go-sql-driver/mysql`: MySQL driver (optional)
 
-- `database/sql`：Go 标准数据库接口
-- `github.com/go-sql-driver/mysql`：MySQL 驱动（可选）
-
-## 许可证
+## License
 
 MIT License
