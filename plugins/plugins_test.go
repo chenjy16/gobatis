@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -187,5 +188,112 @@ func TestPageRequest(t *testing.T) {
 	expectedOffset := (2 - 1) * 20
 	if extractedReq.Offset != expectedOffset {
 		t.Errorf("Expected offset %d, got %d", expectedOffset, extractedReq.Offset)
+	}
+}
+
+// TestPaginationSQLInjectionPrevention 测试分页插件的SQL注入防护
+func TestPaginationSQLInjectionPrevention(t *testing.T) {
+	plugin := NewPaginationPlugin()
+
+	// 测试安全的列名
+	validColumns := []string{
+		"name",
+		"user_id", 
+		"table.column",
+		"_private",
+		"column123",
+	}
+
+	for _, col := range validColumns {
+		if !plugin.isValidColumnName(col) {
+			t.Errorf("Expected column '%s' to be valid", col)
+		}
+	}
+
+	// 测试不安全的列名（可能的SQL注入）
+	invalidColumns := []string{
+		"name; DROP TABLE users;",
+		"name' OR '1'='1",
+		"name--",
+		"name/*comment*/",
+		"name UNION SELECT",
+		"123invalid",
+		"",
+		"name.table.invalid",
+	}
+
+	for _, col := range invalidColumns {
+		if plugin.isValidColumnName(col) {
+			t.Errorf("Expected column '%s' to be invalid", col)
+		}
+	}
+
+	// 测试buildPagedSQL对不安全排序字段的处理
+	originalSQL := "SELECT * FROM users WHERE status = 'active'"
+	
+	// 不安全的排序字段应该被忽略
+	unsafePageReq := &PageRequest{
+		Page:    1,
+		Size:    10,
+		Offset:  0,
+		SortBy:  "name; DROP TABLE users;",
+		SortDir: "ASC",
+	}
+
+	pagedSQL := plugin.buildPagedSQL(originalSQL, unsafePageReq)
+	
+	// 不应该包含不安全的排序字段
+	if strings.Contains(pagedSQL, "DROP TABLE") {
+		t.Error("Unsafe SQL injection attempt was not prevented")
+	}
+	
+	// 应该只包含LIMIT子句
+	if !strings.Contains(pagedSQL, "LIMIT 10 OFFSET 0") {
+		t.Error("Expected LIMIT clause in paged SQL")
+	}
+}
+
+// TestPaginationParameterValidation 测试分页参数验证
+func TestPaginationParameterValidation(t *testing.T) {
+	plugin := NewPaginationPlugin()
+
+	// 测试有效的分页参数
+	validRequests := []*PageRequest{
+		{Page: 1, Size: 10},
+		{Page: 100, Size: 50},
+		{Page: 1000, Size: 1000},
+	}
+
+	for _, req := range validRequests {
+		if !plugin.validatePageRequest(req) {
+			t.Errorf("Expected page request %+v to be valid", req)
+		}
+	}
+
+	// 测试无效的分页参数
+	invalidRequests := []*PageRequest{
+		{Page: 0, Size: 10},      // 页码为0
+		{Page: -1, Size: 10},     // 负页码
+		{Page: 1, Size: 0},       // 每页大小为0
+		{Page: 1, Size: -10},     // 负的每页大小
+		{Page: 1, Size: 1001},    // 每页大小过大
+		{Page: 1000001, Size: 10}, // 页码过大
+	}
+
+	for _, req := range invalidRequests {
+		if plugin.validatePageRequest(req) {
+			t.Errorf("Expected page request %+v to be invalid", req)
+		}
+	}
+
+	// 测试extractPageRequest对无效参数的处理
+	invalidPageReq := &PageRequest{
+		Page: -1,
+		Size: 10,
+	}
+
+	extracted := plugin.extractPageRequest([]interface{}{invalidPageReq})
+	if extracted != nil {
+		t.Error("Expected extractPageRequest to return nil for invalid parameters")
 	}
 }

@@ -3,6 +3,7 @@ package plugins
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -98,10 +99,35 @@ func (p *PaginationPlugin) GetOrder() int {
 	return p.order
 }
 
+// validatePageRequest 验证分页请求参数
+func (p *PaginationPlugin) validatePageRequest(pageReq *PageRequest) bool {
+	// 页码必须大于0
+	if pageReq.Page <= 0 {
+		return false
+	}
+	
+	// 每页大小必须在合理范围内 (1-1000)
+	if pageReq.Size <= 0 || pageReq.Size > 1000 {
+		return false
+	}
+	
+	// 防止整数溢出
+	if pageReq.Page > 1000000 {
+		return false
+	}
+	
+	return true
+}
+
 // extractPageRequest 从参数中提取分页请求
 func (p *PaginationPlugin) extractPageRequest(args []interface{}) *PageRequest {
 	for _, arg := range args {
 		if pageReq, ok := arg.(*PageRequest); ok {
+			// 验证分页参数
+			if !p.validatePageRequest(pageReq) {
+				return nil
+			}
+			
 			// 计算偏移量
 			if pageReq.Offset == 0 && pageReq.Page > 0 {
 				pageReq.Offset = (pageReq.Page - 1) * pageReq.Size
@@ -120,12 +146,16 @@ func (p *PaginationPlugin) extractPageRequest(args []interface{}) *PageRequest {
 			if pageField.IsValid() && sizeField.IsValid() {
 				page := int(pageField.Int())
 				size := int(sizeField.Int())
-				if page > 0 && size > 0 {
-					return &PageRequest{
-						Page:   page,
-						Size:   size,
-						Offset: (page - 1) * size,
-					}
+				
+				pageReq := &PageRequest{
+					Page:   page,
+					Size:   size,
+					Offset: (page - 1) * size,
+				}
+				
+				// 验证分页参数
+				if p.validatePageRequest(pageReq) {
+					return pageReq
 				}
 			}
 		}
@@ -165,20 +195,33 @@ func (p *PaginationPlugin) buildCountSQL(originalSQL string) string {
 	return fmt.Sprintf("SELECT COUNT(*) %s", fromClause)
 }
 
+// isValidColumnName 验证列名是否安全（防止SQL注入）
+func (p *PaginationPlugin) isValidColumnName(columnName string) bool {
+	// 只允许字母、数字、下划线和点号（用于表名.列名）
+	validPattern := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$`)
+	return validPattern.MatchString(columnName)
+}
+
 // buildPagedSQL 构建分页 SQL
 func (p *PaginationPlugin) buildPagedSQL(originalSQL string, pageRequest *PageRequest) string {
 	sql := originalSQL
 	
 	// 添加排序
 	if pageRequest.SortBy != "" {
-		sortDir := "ASC"
-		if strings.ToUpper(pageRequest.SortDir) == "DESC" {
-			sortDir = "DESC"
-		}
-		
-		// 检查是否已有 ORDER BY
-		if !strings.Contains(strings.ToLower(sql), "order by") {
-			sql += fmt.Sprintf(" ORDER BY %s %s", pageRequest.SortBy, sortDir)
+		// 验证排序字段名，防止SQL注入
+		if !p.isValidColumnName(pageRequest.SortBy) {
+			// 如果字段名不安全，跳过排序
+			pageRequest.SortBy = ""
+		} else {
+			sortDir := "ASC"
+			if strings.ToUpper(pageRequest.SortDir) == "DESC" {
+				sortDir = "DESC"
+			}
+			
+			// 检查是否已有 ORDER BY
+			if !strings.Contains(strings.ToLower(sql), "order by") {
+				sql += fmt.Sprintf(" ORDER BY %s %s", pageRequest.SortBy, sortDir)
+			}
 		}
 	}
 	

@@ -1,6 +1,6 @@
 # gobatis
 
-A MyBatis-like ORM framework for Go, providing SQL-business logic decoupling, automatic parameter binding, struct result mapping, plugin extensions, and more.
+A ORM framework for Go, providing SQL-business logic decoupling, automatic parameter binding, struct result mapping, plugin extensions, and more.
 
 ## Features
 
@@ -111,6 +111,21 @@ func main() {
         fmt.Printf("User: %+v\n", user)
     }
     
+    // Example query builder usage
+    ex := example.NewExample()
+    criteria := ex.CreateCriteria()
+    criteria.AndEqualTo("status", "active")
+    criteria.AndGreaterThan("age", 18)
+    ex.SetOrderByClause("created_at DESC")
+    ex.SetLimit(0, 10)
+    
+    users, err := userMapper.SelectByExample(ex)
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+    } else {
+        fmt.Printf("Found %d users\n", len(users))
+    }
+    
     // Pagination query example
     pageReq := &plugins.PageRequest{Page: 1, Size: 10}
     // pageResult := userService.SearchUsersPaginated("john", pageReq)
@@ -119,7 +134,138 @@ func main() {
 
 ## Plugin System Overview
 
+### Example Query Builder
 
+The Example query builder provides a type-safe way to build dynamic SQL queries without writing SQL strings directly. It supports various conditions, sorting, and pagination.
+
+**1. Basic Usage**
+
+```go
+import "gobatis/core/example"
+
+// Create a new Example for User table
+ex := example.NewExample()
+
+// Create criteria for conditions
+criteria := ex.CreateCriteria()
+
+// Add various conditions
+criteria.AndEqualTo("username", "john")
+criteria.AndGreaterThan("age", 18)
+criteria.AndLike("email", "%@gmail.com")
+
+// Set sorting
+ex.SetOrderByClause("created_at DESC, username ASC")
+
+// Set pagination
+ex.SetLimit(0, 10) // LIMIT 0, 10
+
+// Use in Mapper method
+users, err := userMapper.SelectByExample(ex)
+```
+
+**2. Complex Conditions with OR**
+
+```go
+ex := example.NewExample()
+
+// First condition group: username = 'john' AND age > 18
+criteria1 := ex.CreateCriteria()
+criteria1.AndEqualTo("username", "john")
+criteria1.AndGreaterThan("age", 18)
+
+// Second condition group: email LIKE '%admin%' AND status = 'active'
+criteria2 := ex.Or()
+criteria2.AndLike("email", "%admin%")
+criteria2.AndEqualTo("status", "active")
+
+// Final SQL: WHERE (username = ? AND age > ?) OR (email LIKE ? AND status = ?)
+users, err := userMapper.SelectByExample(ex)
+```
+
+**3. Available Condition Methods**
+
+```go
+criteria := ex.CreateCriteria()
+
+// Equality conditions
+criteria.AndEqualTo("field", value)
+criteria.AndNotEqualTo("field", value)
+
+// Comparison conditions
+criteria.AndGreaterThan("field", value)
+criteria.AndGreaterThanOrEqualTo("field", value)
+criteria.AndLessThan("field", value)
+criteria.AndLessThanOrEqualTo("field", value)
+
+// NULL conditions
+criteria.AndIsNull("field")
+criteria.AndIsNotNull("field")
+
+// Pattern matching
+criteria.AndLike("field", "%pattern%")
+criteria.AndNotLike("field", "%pattern%")
+
+// Range conditions
+criteria.AndBetween("field", value1, value2)
+criteria.AndNotBetween("field", value1, value2)
+
+// List conditions
+criteria.AndIn("field", []interface{}{value1, value2, value3})
+criteria.AndNotIn("field", []interface{}{value1, value2, value3})
+```
+
+**4. Advanced Features**
+
+```go
+ex := example.NewExample()
+
+// Enable DISTINCT
+ex.SetDistinct(true)
+
+// Set ORDER BY (with security validation)
+ex.SetOrderByClause("created_at DESC, username ASC")
+
+// Set LIMIT
+ex.SetLimit(10, 20) // LIMIT 10, 20 (offset, count)
+
+// Clear all conditions
+ex.Clear()
+
+// Check if example has valid conditions
+if ex.IsValid() {
+    users, err := userMapper.SelectByExample(ex)
+}
+```
+
+**5. Mapper Integration**
+
+Define methods in your Mapper interface that accept Example parameters:
+
+```go
+type UserMapper interface {
+    SelectByExample(example *example.Example) ([]*User, error)
+    CountByExample(example *example.Example) (int64, error)
+    UpdateByExample(user *User, example *example.Example) (int64, error)
+    DeleteByExample(example *example.Example) (int64, error)
+}
+```
+
+**6. Security Features**
+
+The Example query builder includes built-in security features:
+
+- **SQL Injection Prevention**: All values are passed through parameterized queries
+- **ORDER BY Validation**: ORDER BY clauses are validated to prevent injection
+- **Safe Column Names**: Only valid column name patterns are allowed
+
+```go
+// Safe - will be accepted
+ex.SetOrderByClause("name ASC, created_at DESC")
+
+// Unsafe - will be ignored
+ex.SetOrderByClause("name; DROP TABLE users;")
+```
 
 ### Pagination Plugin
 
@@ -233,7 +379,7 @@ go test -v ./plugins
 
 ## Summary
 
-This project successfully implements a fully functional Go version of the MyBatis framework, including the following core features:
+
 
 ### ✅ Implemented Features
 
@@ -252,11 +398,19 @@ This project successfully implements a fully functional Go version of the MyBati
    - Method call routing
    - Parameter binding
 
-4. **Plugin Extension System**
+4. **Example Query Builder**
+   - Type-safe dynamic SQL query construction
+   - Support for complex conditions (AND, OR, LIKE, IN, BETWEEN, etc.)
+   - Built-in SQL injection prevention
+   - ORDER BY and LIMIT clause support
+   - Security validation for all user inputs
+
+5. **Plugin Extension System**
    - Pagination plugin (automatic pagination queries and counting)
    - Plugin manager (plugin registration, sorting, execution chain)
+   - Security features (parameter validation, SQL injection prevention)
 
-5. **Parameter Binding and Result Mapping**
+6. **Parameter Binding and Result Mapping**
    - Named parameter binding
    - Struct field mapping
    - Type conversion
@@ -269,13 +423,9 @@ This project successfully implements a fully functional Go version of the MyBati
 - **Test Coverage**: Complete unit tests and integration tests
 - **Performance Optimization**: Connection pooling, batch operation support
 
-### 📊 Test Results
 
-All test cases pass, including:
-- Core functionality tests: ✅ 7/7 passed
-- Plugin system tests: ✅ 6/6 passed
 
-This framework provides Go developers with a MyBatis-like ORM solution with good extensibility and ease of use.
+
 
 ## Core Components
 
@@ -289,69 +439,84 @@ This framework provides Go developers with a MyBatis-like ORM solution with good
 - Transaction control
 - Mapper proxy creation
 
-### 3. Parameter Binding (ParameterBinder)
+### 3. Example Query Builder (Example)
+- Type-safe dynamic SQL query construction
+- Complex condition building (AND, OR, comparison, pattern matching)
+- Security validation and SQL injection prevention
+- ORDER BY and LIMIT clause support
+
+### 4. Parameter Binding (ParameterBinder)
 - Named parameter binding
 - Struct field mapping
 - Type conversion
 
-### 4. Result Mapping (ResultMapper)
+### 5. Result Mapping (ResultMapper)
 - Query result to struct mapping
 - Field name conversion (camelCase ↔ snake_case)
 - Type conversion
 
-### 5. Dynamic Proxy (MapperProxy)
+### 6. Dynamic Proxy (MapperProxy)
 - Interface method proxy
 - Method call routing
 - Return value handling
 
-### 6. SQL Executor (Executor)
+### 7. SQL Executor (Executor)
 - SQL execution
 - Parameter binding
 - Result processing
 
-### 7. Plugin System (Plugins)
+### 8. Plugin System (Plugins)
 - **Pagination Plugin**: Automatic pagination queries with sorting and counting support
 - **Plugin Manager**: Plugin registration, sorting, and execution chain management
+- **Security Features**: Parameter validation and SQL injection prevention
 
 ## Project Structure
 
 ```
 gobatis/
 ├── binding/              # Parameter binding module
-│   └── parameter_binder.go
+│   ├── parameter_binder.go
+│   └── parameter_binder_test.go
 ├── core/                 # Core modules
 │   ├── config/          # Configuration management
-│   │   └── configuration.go
+│   │   ├── configuration.go
+│   │   └── configuration_test.go
+│   ├── example/         # Example query builder
+│   │   ├── example.go   # Example implementation
+│   │   ├── example_test.go # Example tests
+│   │   └── README.md    # Example documentation
 │   ├── executor/        # SQL executor
-│   │   └── executor.go
+│   │   ├── executor.go
+│   │   └── executor_test.go
 │   ├── mapper/          # Mapper proxy
-│   │   └── mapper_proxy.go
+│   │   ├── mapper_proxy.go
+│   │   └── mapper_proxy_test.go
 │   └── session/         # Session management
-│       └── sql_session.go
+│       ├── sql_session.go
+│       └── sql_session_test.go
 ├── plugins/             # Plugin system
 │   ├── manager.go      # Plugin manager
 │   ├── pagination.go   # Pagination plugin
 │   ├── plugin.go       # Plugin interface
 │   └── plugins_test.go # Plugin tests
 ├── examples/            # Example code
-│   ├── user.go         # User entity and interface
-│   └── user_mapper.xml # Mapper XML configuration
+│   ├── complete_example.go # Complete usage example
+│   ├── complete_example_test.go
+│   ├── dao.go          # Data access objects
+│   ├── main.go         # Main example
+│   ├── models.go       # Model definitions
+│   ├── schema.sql      # Database schema
+│   └── README.md       # Examples documentation
 ├── mapping/             # Result mapping module
-│   └── result_mapper.go
+│   ├── result_mapper.go
+│   └── result_mapper_test.go
 ├── gobatis.go          # Main entry file
-├── gobatis_test.go     # Test file
-├── core_test.go        # Core functionality tests
 ├── go.mod              # Go module file
-└── README.md           # Project documentation
+├── go.sum              # Go dependencies
+├── README.md           # Project documentation
+└── SECURITY.md         # Security guidelines
 ```
 
-## Design Features
-
-1. **Modular Design**: Clear component responsibilities, easy to extend and maintain
-2. **Interface-Driven**: Define component contracts through interfaces, support different implementations
-3. **Reflection Mechanism**: Utilize Go's reflection features for dynamic proxy and type conversion
-4. **XML Configuration**: Support XML configuration files to define SQL statements
-5. **Plugin Architecture**: Reserved plugin interfaces, support functional extensions
 
 ## Technical Implementation
 
