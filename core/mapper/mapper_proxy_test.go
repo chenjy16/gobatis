@@ -91,7 +91,7 @@ func TestMapperProxy_GetStatementId(t *testing.T) {
 	}
 	
 	statementId := mp.getStatementId("GetUser")
-	expected := "TestMapper.GetUser"
+	expected := "mapper.TestMapper.GetUser"
 	
 	if statementId != expected {
 		t.Fatalf("Expected statement ID '%s', got '%s'", expected, statementId)
@@ -268,8 +268,8 @@ func TestMapperProxy_SelectOne(t *testing.T) {
 		t.Fatalf("Expected 'test_result', got %v", result)
 	}
 	
-	if session.lastStatementId != "TestMapper.GetUser" {
-		t.Fatalf("Expected statement ID 'TestMapper.GetUser', got '%s'", session.lastStatementId)
+	if session.lastStatementId != "mapper.TestMapper.GetUser" {
+		t.Fatalf("Expected statement ID 'mapper.TestMapper.GetUser', got '%s'", session.lastStatementId)
 	}
 	
 	if session.lastParameter != 123 {
@@ -298,8 +298,8 @@ func TestMapperProxy_SelectList(t *testing.T) {
 		t.Fatalf("Expected 2 results, got %d", len(result))
 	}
 	
-	if session.lastStatementId != "TestMapper.FindUsers" {
-		t.Fatalf("Expected statement ID 'TestMapper.FindUsers', got '%s'", session.lastStatementId)
+	if session.lastStatementId != "mapper.TestMapper.FindUsers" {
+		t.Fatalf("Expected statement ID 'mapper.TestMapper.FindUsers', got '%s'", session.lastStatementId)
 	}
 }
 
@@ -325,8 +325,8 @@ func TestMapperProxy_Insert(t *testing.T) {
 		t.Fatalf("Expected 123, got %d", result)
 	}
 	
-	if session.lastStatementId != "TestMapper.InsertUser" {
-		t.Fatalf("Expected statement ID 'TestMapper.InsertUser', got '%s'", session.lastStatementId)
+	if session.lastStatementId != "mapper.TestMapper.InsertUser" {
+		t.Fatalf("Expected statement ID 'mapper.TestMapper.InsertUser', got '%s'", session.lastStatementId)
 	}
 }
 
@@ -352,8 +352,8 @@ func TestMapperProxy_Update(t *testing.T) {
 		t.Fatalf("Expected 1, got %d", result)
 	}
 	
-	if session.lastStatementId != "TestMapper.UpdateUser" {
-		t.Fatalf("Expected statement ID 'TestMapper.UpdateUser', got '%s'", session.lastStatementId)
+	if session.lastStatementId != "mapper.TestMapper.UpdateUser" {
+		t.Fatalf("Expected statement ID 'mapper.TestMapper.UpdateUser', got '%s'", session.lastStatementId)
 	}
 }
 
@@ -378,8 +378,8 @@ func TestMapperProxy_Delete(t *testing.T) {
 		t.Fatalf("Expected 1, got %d", result)
 	}
 	
-	if session.lastStatementId != "TestMapper.DeleteUser" {
-		t.Fatalf("Expected statement ID 'TestMapper.DeleteUser', got '%s'", session.lastStatementId)
+	if session.lastStatementId != "mapper.TestMapper.DeleteUser" {
+		t.Fatalf("Expected statement ID 'mapper.TestMapper.DeleteUser', got '%s'", session.lastStatementId)
 	}
 }
 

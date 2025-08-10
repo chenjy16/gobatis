@@ -314,7 +314,24 @@ func (mp *MapperProxy) invoke(methodName string, methodType reflect.Type, args [
 
 // getStatementId 获取语句 ID
 func (mp *MapperProxy) getStatementId(methodName string) string {
-	return mp.mapperType.Name() + "." + methodName
+	// 获取接口的包路径和名称
+	pkgPath := mp.mapperType.PkgPath()
+	typeName := mp.mapperType.Name()
+	
+	// 如果有包路径，提取包名
+	if pkgPath != "" {
+		// 从包路径中提取最后一个部分作为包名
+		// 例如：gobatis/examples/dao -> dao
+		parts := strings.Split(pkgPath, "/")
+		if len(parts) > 0 {
+			pkgName := parts[len(parts)-1]
+			// 统一使用 包名.接口名.方法名 格式
+			return pkgName + "." + typeName + "." + methodName
+		}
+	}
+	
+	// 如果没有包路径，直接使用接口名.方法名
+	return typeName + "." + methodName
 }
 
 // isSelectMethod 判断是否为查询方法
