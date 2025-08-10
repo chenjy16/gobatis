@@ -1,6 +1,7 @@
 package gobatis
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"gobatis/binding"
@@ -9,6 +10,7 @@ import (
 	"gobatis/mapping"
 	"gobatis/plugins"
 	"reflect"
+	"time"
 )
 
 // SqlSession SQL 会话接口
@@ -299,15 +301,27 @@ func (s *DefaultSqlSession) Close() error {
 
 // query 执行查询
 func (s *DefaultSqlSession) query(statement *config.MapperStatement, parameter interface{}) ([]interface{}, error) {
+	// 开始计时
+	begin := time.Now()
+	ctx := context.Background()
+
 	// 绑定参数
 	processedSQL, args, err := s.parameterBinder.BindParameters(statement.SQL, parameter)
 	if err != nil {
+		// 记录参数绑定错误
+		s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+			return fmt.Sprintf("%s [PARAMS: %v]", statement.SQL, parameter), -1
+		}, err)
 		return nil, fmt.Errorf("failed to bind parameters: %w", err)
 	}
 
 	// 执行查询
 	rows, err := s.configuration.DataSource.DB.Query(processedSQL, args...)
 	if err != nil {
+		// 记录查询执行错误
+		s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+			return fmt.Sprintf("%s [ARGS: %v]", processedSQL, args), -1
+		}, err)
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
@@ -322,39 +336,72 @@ func (s *DefaultSqlSession) query(statement *config.MapperStatement, parameter i
 	// 映射结果
 	results, err := s.resultMapper.MapResults(rows, resultType)
 	if err != nil {
+		// 记录结果映射错误
+		s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+			return fmt.Sprintf("%s [ARGS: %v]", processedSQL, args), -1
+		}, err)
 		return nil, fmt.Errorf("failed to map results: %w", err)
 	}
+
+	// 记录成功的查询
+	s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+		return fmt.Sprintf("%s [ARGS: %v]", processedSQL, args), int64(len(results))
+	}, nil)
 
 	return results, nil
 }
 
 // update 执行更新（包括 INSERT、UPDATE、DELETE）
 func (s *DefaultSqlSession) update(statement *config.MapperStatement, parameter interface{}) (int64, error) {
+	// 开始计时
+	begin := time.Now()
+	ctx := context.Background()
+
 	// 绑定参数
 	processedSQL, args, err := s.parameterBinder.BindParameters(statement.SQL, parameter)
 	if err != nil {
+		// 记录参数绑定错误
+		s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+			return fmt.Sprintf("%s [PARAMS: %v]", statement.SQL, parameter), -1
+		}, err)
 		return 0, fmt.Errorf("failed to bind parameters: %w", err)
 	}
 
 	// 执行更新
 	result, err := s.configuration.DataSource.DB.Exec(processedSQL, args...)
 	if err != nil {
+		// 记录执行错误
+		s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+			return fmt.Sprintf("%s [ARGS: %v]", processedSQL, args), -1
+		}, err)
 		return 0, fmt.Errorf("failed to execute update: %w", err)
 	}
 
 	// 根据语句类型返回不同的结果
+	var affectedRows int64
 	switch statement.StatementType {
 	case config.INSERT:
 		// 对于 INSERT，返回插入的 ID
 		if id, err := result.LastInsertId(); err == nil {
-			return id, nil
+			affectedRows = id
+		} else if affected, err := result.RowsAffected(); err == nil {
+			affectedRows = affected
 		}
-		// 如果获取不到 ID，返回影响的行数
-		return result.RowsAffected()
 	case config.UPDATE, config.DELETE:
 		// 对于 UPDATE 和 DELETE，返回影响的行数
-		return result.RowsAffected()
+		if affected, err := result.RowsAffected(); err == nil {
+			affectedRows = affected
+		}
 	default:
-		return result.RowsAffected()
+		if affected, err := result.RowsAffected(); err == nil {
+			affectedRows = affected
+		}
 	}
+
+	// 记录成功的更新
+	s.configuration.Logger.Trace(ctx, begin, func() (string, int64) {
+		return fmt.Sprintf("%s [ARGS: %v]", processedSQL, args), affectedRows
+	}, nil)
+
+	return affectedRows, nil
 }

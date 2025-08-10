@@ -10,6 +10,7 @@ A ORM framework for Go, providing SQL-business logic decoupling, automatic param
 - **Plugin Extension System**: Support for plugins like pagination with custom extensions
 - **Dynamic Proxy**: Automatically generate Mapper interface proxies to simplify data access
 - **Parameter Binding**: Support for named parameters and struct parameter binding
+- **Advanced Logging System**: GORM-compatible logging with SQL tracing, slow query detection, and third-party logger integration
 
 ## Quick Start
 
@@ -78,6 +79,16 @@ func main() {
     // Create configuration
     config := gobatis.NewConfiguration()
     
+    // Configure logging (optional - uses default logger if not set)
+    config.Logger = logger.New(
+        log.New(os.Stdout, "", log.LstdFlags),
+        logger.Config{
+            SlowThreshold: 200 * time.Millisecond,
+            LogLevel:      logger.Info,
+            Colorful:      true,
+        },
+    )
+    
     // Set data source
     err := config.SetDataSource("mysql", "user:password@tcp(localhost:3306)/dbname?parseTime=true")
     if err != nil {
@@ -130,6 +141,441 @@ func main() {
     pageReq := &plugins.PageRequest{Page: 1, Size: 10}
     // pageResult := userService.SearchUsersPaginated("john", pageReq)
 }
+```
+
+## Logging System
+
+GoBatis provides a powerful and flexible logging system inspired by GORM's design, offering SQL tracing, slow query detection, multi-level logging, and third-party logger integration.
+
+### Features
+
+- **Interface-Driven Design** - Based on `logger.Interface`, supports custom implementations
+- **Multi-Level Logging** - Silent, Error, Warn, Info levels
+- **SQL Tracing** - Automatically logs SQL statements, parameters, execution time, and affected rows
+- **Slow Query Detection** - Configurable threshold with automatic slow query warnings
+- **Colorful Output** - Supports colored console output for better development experience
+- **Context Support** - Supports `context.Context` for distributed tracing
+- **High Performance** - Optimized implementation with minimal performance impact
+- **Third-Party Integration** - Easy integration with Logrus, Zap, Zerolog, and other popular loggers
+
+### Quick Start
+
+#### 1. Using Default Logger
+
+```go
+import "gobatis/logger"
+
+// Use default configuration
+log := logger.Default
+
+// Set log level
+log = log.LogMode(logger.Info)
+
+// Log messages
+ctx := context.Background()
+log.Info(ctx, "Application started")
+log.Warn(ctx, "This is a warning")
+log.Error(ctx, "This is an error")
+```
+
+#### 2. Custom Logger Configuration
+
+```go
+import (
+    "gobatis/logger"
+    "log"
+    "os"
+    "time"
+)
+
+// Create custom logger
+customLogger := logger.New(
+    log.New(os.Stdout, "[GOBATIS] ", log.LstdFlags),
+    logger.Config{
+        SlowThreshold:             200 * time.Millisecond, // Slow query threshold
+        LogLevel:                  logger.Warn,            // Log level
+        IgnoreRecordNotFoundError: true,                   // Ignore record not found errors
+        Colorful:                  true,                   // Enable colored output
+        ParameterizedQueries:      false,                  // Show full SQL
+    },
+)
+```
+
+#### 3. Using in GoBatis
+
+```go
+import (
+    "gobatis"
+    "gobatis/core/config"
+    "gobatis/logger"
+)
+
+// Create configuration
+configuration := config.NewConfiguration()
+
+// Set custom logger
+configuration.Logger = logger.New(
+    log.New(os.Stdout, "", log.LstdFlags),
+    logger.Config{
+        SlowThreshold: 100 * time.Millisecond,
+        LogLevel:      logger.Info,
+        Colorful:      true,
+    },
+)
+
+// Create SQL session factory
+factory := gobatis.NewSqlSessionFactory(configuration)
+session := factory.OpenSession()
+
+// Queries will automatically log
+user, err := session.SelectOne("UserMapper.GetUserById", 1)
+```
+
+### Log Levels
+
+#### Silent
+Silent mode, no logs output. Suitable for production environments or performance-sensitive scenarios.
+
+```go
+logger := logger.Default.LogMode(logger.Silent)
+```
+
+#### Error
+Only output error logs, including SQL execution errors.
+
+```go
+logger := logger.Default.LogMode(logger.Error)
+```
+
+#### Warn
+Output warning and error logs, including slow query warnings.
+
+```go
+logger := logger.Default.LogMode(logger.Warn)
+```
+
+#### Info
+Output all logs, including SQL statement tracing. Suitable for development environments.
+
+```go
+logger := logger.Default.LogMode(logger.Info)
+```
+
+### SQL Tracing
+
+The logging system automatically traces all SQL executions, recording:
+
+- **Execution Time** - Accurate to milliseconds
+- **SQL Statements** - Complete SQL statements and parameters
+- **Affected Rows** - Number of query results or updated rows
+- **Error Information** - Detailed error messages if execution fails
+
+#### Example Output
+
+
+
+### Custom Logger Implementation
+
+You can implement the `logger.Interface` to create custom loggers:
+
+```go
+type CustomLogger struct {
+    // Your fields
+}
+
+func (l *CustomLogger) LogMode(level logger.LogLevel) logger.Interface {
+    // Implement log level setting
+}
+
+func (l *CustomLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+    // Implement info logging
+}
+
+func (l *CustomLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+    // Implement warning logging
+}
+
+func (l *CustomLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+    // Implement error logging
+}
+
+func (l *CustomLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+    // Implement SQL tracing
+}
+```
+
+### Third-Party Logger Integration
+
+GoBatis logging system fully supports integration with third-party logging libraries like Logrus, Zap, Zerolog, etc. By implementing the `logger.Interface`, you can easily integrate any logging library.
+
+#### Supported Third-Party Loggers
+
+We provide adapters for the following popular logging libraries:
+
+1. **Logrus** - Structured logging library
+2. **Zap** - High-performance logging library  
+3. **Zerolog** - Zero-allocation logging library
+
+#### Adapter Usage
+
+```go
+package main
+
+import (
+    "gobatis/core/config"
+    "gobatis/logger"
+)
+
+func main() {
+    // 1. Using Logrus adapter
+    logrusAdapter := &logger.LogrusAdapter{}
+    config1 := config.NewConfiguration()
+    config1.Logger = logrusAdapter.LogMode(logger.Info)
+    
+    // 2. Using Zap adapter
+    zapAdapter := &logger.ZapAdapter{}
+    config2 := config.NewConfiguration()
+    config2.Logger = zapAdapter.LogMode(logger.Warn)
+    
+    // 3. Using Zerolog adapter
+    zerologAdapter := &logger.ZerologAdapter{}
+    config3 := config.NewConfiguration()
+    config3.Logger = zerologAdapter.LogMode(logger.Error)
+}
+```
+
+#### Custom Adapter Example (Zerolog)
+
+```go
+package main
+
+import (
+    "context"
+    "time"
+    "github.com/rs/zerolog"
+    "github.com/rs/zerolog/log"
+    "gobatis/logger"
+)
+
+// ZerologAdapter implements logger.Interface
+type ZerologAdapter struct {
+    level logger.LogLevel
+}
+
+func (z *ZerologAdapter) LogMode(level logger.LogLevel) logger.Interface {
+    return &ZerologAdapter{level: level}
+}
+
+func (z *ZerologAdapter) Info(ctx context.Context, msg string, data ...interface{}) {
+    if z.level >= logger.Info {
+        log.Info().Msgf(msg, data...)
+    }
+}
+
+func (z *ZerologAdapter) Warn(ctx context.Context, msg string, data ...interface{}) {
+    if z.level >= logger.Warn {
+        log.Warn().Msgf(msg, data...)
+    }
+}
+
+func (z *ZerologAdapter) Error(ctx context.Context, msg string, data ...interface{}) {
+    if z.level >= logger.Error {
+        log.Error().Msgf(msg, data...)
+    }
+}
+
+func (z *ZerologAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+    if z.level <= logger.Silent {
+        return
+    }
+    
+    elapsed := time.Since(begin)
+    sql, rows := fc()
+    
+    if err != nil && err != logger.ErrRecordNotFound {
+        log.Error().
+            Err(err).
+            Dur("elapsed", elapsed).
+            Int64("rows", rows).
+            Str("sql", sql).
+            Msg("SQL execution failed")
+    } else if elapsed > 200*time.Millisecond {
+        log.Warn().
+            Dur("elapsed", elapsed).
+            Int64("rows", rows).
+            Str("sql", sql).
+            Msg("Slow SQL detected")
+    } else if z.level >= logger.Info {
+        log.Info().
+            Dur("elapsed", elapsed).
+            Int64("rows", rows).
+            Str("sql", sql).
+            Msg("SQL executed")
+    }
+}
+```
+
+### Configuration Options
+
+#### SlowThreshold
+Slow query threshold. Queries exceeding this time will be marked as slow queries.
+
+```go
+Config{
+    SlowThreshold: 200 * time.Millisecond,
+}
+```
+
+#### Colorful
+Whether to enable colored output, improving readability in development environments.
+
+```go
+Config{
+    Colorful: true, // Enable colored output
+}
+```
+
+#### IgnoreRecordNotFoundError
+Whether to ignore "record not found" error logging.
+
+```go
+Config{
+    IgnoreRecordNotFoundError: true,
+}
+```
+
+#### ParameterizedQueries
+Whether to show parameterized queries (hide specific parameter values).
+
+```go
+Config{
+    ParameterizedQueries: true, // Hide parameters, show only placeholders
+}
+```
+
+### Performance Considerations
+
+- The logging system is optimized for minimal performance impact
+- Use `Silent` or `Error` levels in production environments
+- SQL tracing uses lazy execution, formatting SQL only when needed
+- Supports conditional compilation to completely disable logging at compile time
+
+### Best Practices
+
+1. **Development Environment** - Use `Info` level with colored output enabled
+2. **Testing Environment** - Use `Warn` level to log slow queries and errors
+3. **Production Environment** - Use `Error` level or `Silent` to minimize log output
+4. **Performance Tuning** - Use slow query detection to identify performance bottlenecks
+5. **Error Troubleshooting** - Temporarily increase log level when issues occur
+
+### Example Usage
+
+```go
+// ExampleCustomLogger custom logger implementation example
+type ExampleCustomLogger struct {
+    *log.Logger
+    LogLevel logger.LogLevel
+}
+
+// NewExampleCustomLogger creates custom logger instance
+func NewExampleCustomLogger() logger.Interface {
+    return &ExampleCustomLogger{
+        Logger:   log.New(os.Stdout, "[GOBATIS] ", log.LstdFlags),
+        LogLevel: logger.Info,
+    }
+}
+
+// LogMode sets log level
+func (l *ExampleCustomLogger) LogMode(level logger.LogLevel) logger.Interface {
+    newLogger := *l
+    newLogger.LogLevel = level
+    return &newLogger
+}
+
+// Info outputs info logs
+func (l *ExampleCustomLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+    if l.LogLevel >= logger.Info {
+        l.Printf("[INFO] "+msg, data...)
+    }
+}
+
+// Warn outputs warning logs
+func (l *ExampleCustomLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+    if l.LogLevel >= logger.Warn {
+        l.Printf("[WARN] "+msg, data...)
+    }
+}
+
+// Error outputs error logs
+func (l *ExampleCustomLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+    if l.LogLevel >= logger.Error {
+        l.Printf("[ERROR] "+msg, data...)
+    }
+}
+
+// Trace traces SQL execution
+func (l *ExampleCustomLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+    if l.LogLevel <= logger.Silent {
+        return
+    }
+
+    elapsed := time.Since(begin)
+    sql, rows := fc()
+
+    if err != nil && l.LogLevel >= logger.Error {
+        l.Printf("[ERROR] [%.3fms] [rows:%v] %s | Error: %v", 
+            float64(elapsed.Nanoseconds())/1e6, rows, sql, err)
+    } else if l.LogLevel >= logger.Info {
+        l.Printf("[SQL] [%.3fms] [rows:%v] %s", 
+            float64(elapsed.Nanoseconds())/1e6, rows, sql)
+    }
+}
+
+// Example usage demonstration
+func ExampleUsage() {
+    // 1. Use default logger
+    defaultLogger := logger.Default.LogMode(logger.Info)
+    
+    // 2. Create custom logger
+    customLogger := NewExampleCustomLogger()
+    
+    // 3. Create logger with custom configuration
+    configuredLogger := logger.New(log.New(os.Stdout, "[CUSTOM] ", log.LstdFlags), logger.Config{
+        SlowThreshold:             100 * time.Millisecond,
+        LogLevel:                  logger.Warn,
+        IgnoreRecordNotFoundError: true,
+        Colorful:                  false,
+        ParameterizedQueries:      true,
+    })
+
+    // Usage examples
+    ctx := context.Background()
+    
+    defaultLogger.Info(ctx, "Using default logger")
+    customLogger.Warn(ctx, "Using custom logger")
+    configuredLogger.Error(ctx, "Using configured logger")
+    
+    // SQL tracing example
+    begin := time.Now()
+    time.Sleep(50 * time.Millisecond) // Simulate SQL execution time
+    
+    defaultLogger.Trace(ctx, begin, func() (string, int64) {
+        return "SELECT * FROM users WHERE id = ?", 1
+    }, nil)
+}
+```
+
+### Running Demos
+
+```bash
+# View basic logger demo
+go run cmd/logger_demo/main.go
+
+# View third-party logger integration demo
+go run cmd/third_party_logger_demo/main.go
+
+# Run logger tests
+go test ./logger/... -v
 ```
 
 ## Plugin System Overview

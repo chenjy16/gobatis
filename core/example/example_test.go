@@ -209,7 +209,7 @@ func TestExample_BuildSQL_Simple(t *testing.T) {
 
 func TestExample_BuildSQL_Complex(t *testing.T) {
 	example := NewExample()
-	
+
 	// 第一个条件组
 	criteria1 := example.CreateCriteria()
 	criteria1.AndEqualTo("status", "active").
@@ -250,7 +250,7 @@ func TestExample_BuildSQL_Complex(t *testing.T) {
 func TestExample_BuildSQL_WithDistinct(t *testing.T) {
 	example := NewExample()
 	example.SetDistinct(true)
-	
+
 	criteria := example.CreateCriteria()
 	criteria.AndEqualTo("status", "active")
 
@@ -268,7 +268,7 @@ func TestExample_BuildSQL_WithDistinct(t *testing.T) {
 func TestExample_BuildSQL_WithLimit(t *testing.T) {
 	example := NewExample()
 	example.SetLimit(0, 10)
-	
+
 	criteria := example.CreateCriteria()
 	criteria.AndEqualTo("status", "active")
 

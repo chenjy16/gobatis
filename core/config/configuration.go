@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"fmt"
+	"gobatis/logger"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -14,6 +15,7 @@ type Configuration struct {
 	DataSource   *DataSource
 	MapperConfig *MapperConfig
 	Plugins      []Plugin
+	Logger       logger.Interface
 }
 
 // DataSource 数据源配置
@@ -30,9 +32,9 @@ type MapperConfig struct {
 
 // MapperStatement SQL 语句配置
 type MapperStatement struct {
-	ID         string
-	SQL        string
-	ResultType reflect.Type
+	ID            string
+	SQL           string
+	ResultType    reflect.Type
 	StatementType StatementType
 }
 
@@ -66,6 +68,7 @@ func NewConfiguration() *Configuration {
 			Mappers: make(map[string]*MapperStatement),
 		},
 		Plugins: make([]Plugin, 0),
+		Logger:  logger.Default,
 	}
 }
 

@@ -9,11 +9,11 @@ import (
 
 // PageRequest 分页请求
 type PageRequest struct {
-	Page     int `json:"page"`     // 页码（从1开始）
-	Size     int `json:"size"`     // 每页大小
-	Offset   int `json:"offset"`   // 偏移量
-	SortBy   string `json:"sortBy"` // 排序字段
-	SortDir  string `json:"sortDir"` // 排序方向（ASC/DESC）
+	Page    int    `json:"page"`    // 页码（从1开始）
+	Size    int    `json:"size"`    // 每页大小
+	Offset  int    `json:"offset"`  // 偏移量
+	SortBy  string `json:"sortBy"`  // 排序字段
+	SortDir string `json:"sortDir"` // 排序方向（ASC/DESC）
 }
 
 // PageResult 分页结果
@@ -65,7 +65,7 @@ func (p *PaginationPlugin) Intercept(invocation *Invocation) (interface{}, error
 
 	// 构建分页 SQL
 	pagedSQL := p.buildPagedSQL(originalSQL, pageRequest)
-	
+
 	// 更新调用参数中的 SQL
 	p.updateSQL(invocation, pagedSQL)
 
@@ -105,17 +105,17 @@ func (p *PaginationPlugin) validatePageRequest(pageReq *PageRequest) bool {
 	if pageReq.Page <= 0 {
 		return false
 	}
-	
+
 	// 每页大小必须在合理范围内 (1-1000)
 	if pageReq.Size <= 0 || pageReq.Size > 1000 {
 		return false
 	}
-	
+
 	// 防止整数溢出
 	if pageReq.Page > 1000000 {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -127,14 +127,14 @@ func (p *PaginationPlugin) extractPageRequest(args []interface{}) *PageRequest {
 			if !p.validatePageRequest(pageReq) {
 				return nil
 			}
-			
+
 			// 计算偏移量
 			if pageReq.Offset == 0 && pageReq.Page > 0 {
 				pageReq.Offset = (pageReq.Page - 1) * pageReq.Size
 			}
 			return pageReq
 		}
-		
+
 		// 检查是否为包含分页信息的结构体
 		v := reflect.ValueOf(arg)
 		if v.Kind() == reflect.Ptr {
@@ -146,13 +146,13 @@ func (p *PaginationPlugin) extractPageRequest(args []interface{}) *PageRequest {
 			if pageField.IsValid() && sizeField.IsValid() {
 				page := int(pageField.Int())
 				size := int(sizeField.Int())
-				
+
 				pageReq := &PageRequest{
 					Page:   page,
 					Size:   size,
 					Offset: (page - 1) * size,
 				}
-				
+
 				// 验证分页参数
 				if p.validatePageRequest(pageReq) {
 					return pageReq
@@ -178,20 +178,20 @@ func (p *PaginationPlugin) buildCountSQL(originalSQL string) string {
 	// 简单的计数 SQL 构建
 	// 实际项目中可能需要更复杂的 SQL 解析
 	lowerSQL := strings.ToLower(strings.TrimSpace(originalSQL))
-	
+
 	// 查找 FROM 子句
 	fromIndex := strings.Index(lowerSQL, "from")
 	if fromIndex == -1 {
 		return ""
 	}
-	
+
 	// 查找 ORDER BY 子句并移除
 	orderByIndex := strings.LastIndex(lowerSQL, "order by")
 	fromClause := originalSQL[fromIndex:]
 	if orderByIndex > fromIndex {
 		fromClause = originalSQL[fromIndex:orderByIndex]
 	}
-	
+
 	return fmt.Sprintf("SELECT COUNT(*) %s", fromClause)
 }
 
@@ -205,7 +205,7 @@ func (p *PaginationPlugin) isValidColumnName(columnName string) bool {
 // buildPagedSQL 构建分页 SQL
 func (p *PaginationPlugin) buildPagedSQL(originalSQL string, pageRequest *PageRequest) string {
 	sql := originalSQL
-	
+
 	// 添加排序
 	if pageRequest.SortBy != "" {
 		// 验证排序字段名，防止SQL注入
@@ -217,17 +217,17 @@ func (p *PaginationPlugin) buildPagedSQL(originalSQL string, pageRequest *PageRe
 			if strings.ToUpper(pageRequest.SortDir) == "DESC" {
 				sortDir = "DESC"
 			}
-			
+
 			// 检查是否已有 ORDER BY
 			if !strings.Contains(strings.ToLower(sql), "order by") {
 				sql += fmt.Sprintf(" ORDER BY %s %s", pageRequest.SortBy, sortDir)
 			}
 		}
 	}
-	
+
 	// 添加 LIMIT 和 OFFSET
 	sql += fmt.Sprintf(" LIMIT %d OFFSET %d", pageRequest.Size, pageRequest.Offset)
-	
+
 	return sql
 }
 

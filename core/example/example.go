@@ -8,36 +8,36 @@ import (
 
 // Example MyBatis 风格的查询条件构建器
 type Example struct {
-	oredCriteria []Criteria
+	oredCriteria  []Criteria
 	orderByClause string
-	distinct bool
-	limitStart *int
-	limitEnd *int
+	distinct      bool
+	limitStart    *int
+	limitEnd      *int
 }
 
 // Criteria 查询条件组
 type Criteria struct {
 	criteria []Criterion
-	valid bool
+	valid    bool
 }
 
 // Criterion 单个查询条件
 type Criterion struct {
-	condition string
-	value interface{}
-	secondValue interface{}
-	noValue bool
-	singleValue bool
+	condition    string
+	value        interface{}
+	secondValue  interface{}
+	noValue      bool
+	singleValue  bool
 	betweenValue bool
-	listValue bool
-	typeHandler string
+	listValue    bool
+	typeHandler  string
 }
 
 // NewExample 创建新的 Example 实例
 func NewExample() *Example {
 	return &Example{
 		oredCriteria: make([]Criteria, 0),
-		distinct: false,
+		distinct:     false,
 	}
 }
 
@@ -46,7 +46,7 @@ func isValidOrderByClause(orderBy string) bool {
 	if orderBy == "" {
 		return true
 	}
-	
+
 	// 允许的ORDER BY模式：列名、表名.列名、ASC/DESC、逗号和空格
 	// 这个正则表达式匹配安全的ORDER BY子句
 	pattern := `^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?(\s+(ASC|DESC))?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?(\s+(ASC|DESC))?)*$`
@@ -87,7 +87,7 @@ func (e *Example) Or(criteria Criteria) {
 func (e *Example) CreateCriteria() *Criteria {
 	criteria := &Criteria{
 		criteria: make([]Criterion, 0),
-		valid: false,
+		valid:    false,
 	}
 	// 自动将第一个 criteria 添加到 oredCriteria 中
 	if len(e.oredCriteria) == 0 {
@@ -190,8 +190,8 @@ func (c *Criteria) addCriterion(condition string, value interface{}, property st
 		return c
 	}
 	c.criteria = append(c.criteria, Criterion{
-		condition: condition,
-		value: value,
+		condition:   condition,
+		value:       value,
 		singleValue: true,
 	})
 	c.valid = true
@@ -204,8 +204,8 @@ func (c *Criteria) addCriterionForJDBCType(condition string, value interface{}, 
 		return c
 	}
 	c.criteria = append(c.criteria, Criterion{
-		condition: condition,
-		value: value,
+		condition:   condition,
+		value:       value,
 		singleValue: true,
 		typeHandler: typeHandler,
 	})
@@ -217,7 +217,7 @@ func (c *Criteria) addCriterionForJDBCType(condition string, value interface{}, 
 func (c *Criteria) AndIsNull(property string) *Criteria {
 	c.criteria = append(c.criteria, Criterion{
 		condition: property + " IS NULL",
-		noValue: true,
+		noValue:   true,
 	})
 	c.valid = true
 	return c
@@ -227,7 +227,7 @@ func (c *Criteria) AndIsNull(property string) *Criteria {
 func (c *Criteria) AndIsNotNull(property string) *Criteria {
 	c.criteria = append(c.criteria, Criterion{
 		condition: property + " IS NOT NULL",
-		noValue: true,
+		noValue:   true,
 	})
 	c.valid = true
 	return c
@@ -235,42 +235,42 @@ func (c *Criteria) AndIsNotNull(property string) *Criteria {
 
 // AndEqualTo 添加等于条件
 func (c *Criteria) AndEqualTo(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " =", value, property)
+	return c.addCriterion(property+" =", value, property)
 }
 
 // AndNotEqualTo 添加不等于条件
 func (c *Criteria) AndNotEqualTo(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " <>", value, property)
+	return c.addCriterion(property+" <>", value, property)
 }
 
 // AndGreaterThan 添加大于条件
 func (c *Criteria) AndGreaterThan(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " >", value, property)
+	return c.addCriterion(property+" >", value, property)
 }
 
 // AndGreaterThanOrEqualTo 添加大于等于条件
 func (c *Criteria) AndGreaterThanOrEqualTo(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " >=", value, property)
+	return c.addCriterion(property+" >=", value, property)
 }
 
 // AndLessThan 添加小于条件
 func (c *Criteria) AndLessThan(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " <", value, property)
+	return c.addCriterion(property+" <", value, property)
 }
 
 // AndLessThanOrEqualTo 添加小于等于条件
 func (c *Criteria) AndLessThanOrEqualTo(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " <=", value, property)
+	return c.addCriterion(property+" <=", value, property)
 }
 
 // AndLike 添加 LIKE 条件
 func (c *Criteria) AndLike(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " LIKE", value, property)
+	return c.addCriterion(property+" LIKE", value, property)
 }
 
 // AndNotLike 添加 NOT LIKE 条件
 func (c *Criteria) AndNotLike(property string, value interface{}) *Criteria {
-	return c.addCriterion(property + " NOT LIKE", value, property)
+	return c.addCriterion(property+" NOT LIKE", value, property)
 }
 
 // AndIn 添加 IN 条件
@@ -280,7 +280,7 @@ func (c *Criteria) AndIn(property string, values []interface{}) *Criteria {
 	}
 	c.criteria = append(c.criteria, Criterion{
 		condition: property + " IN",
-		value: values,
+		value:     values,
 		listValue: true,
 	})
 	c.valid = true
@@ -294,7 +294,7 @@ func (c *Criteria) AndNotIn(property string, values []interface{}) *Criteria {
 	}
 	c.criteria = append(c.criteria, Criterion{
 		condition: property + " NOT IN",
-		value: values,
+		value:     values,
 		listValue: true,
 	})
 	c.valid = true
@@ -304,9 +304,9 @@ func (c *Criteria) AndNotIn(property string, values []interface{}) *Criteria {
 // AndBetween 添加 BETWEEN 条件
 func (c *Criteria) AndBetween(property string, value1, value2 interface{}) *Criteria {
 	c.criteria = append(c.criteria, Criterion{
-		condition: property + " BETWEEN",
-		value: value1,
-		secondValue: value2,
+		condition:    property + " BETWEEN",
+		value:        value1,
+		secondValue:  value2,
 		betweenValue: true,
 	})
 	c.valid = true
@@ -316,9 +316,9 @@ func (c *Criteria) AndBetween(property string, value1, value2 interface{}) *Crit
 // AndNotBetween 添加 NOT BETWEEN 条件
 func (c *Criteria) AndNotBetween(property string, value1, value2 interface{}) *Criteria {
 	c.criteria = append(c.criteria, Criterion{
-		condition: property + " NOT BETWEEN",
-		value: value1,
-		secondValue: value2,
+		condition:    property + " NOT BETWEEN",
+		value:        value1,
+		secondValue:  value2,
 		betweenValue: true,
 	})
 	c.valid = true
@@ -338,10 +338,10 @@ func (c *Criteria) buildClause() (string, []interface{}) {
 		if criterion.noValue {
 			clauses = append(clauses, criterion.condition)
 		} else if criterion.singleValue {
-			clauses = append(clauses, criterion.condition + " ?")
+			clauses = append(clauses, criterion.condition+" ?")
 			args = append(args, criterion.value)
 		} else if criterion.betweenValue {
-			clauses = append(clauses, criterion.condition + " ? AND ?")
+			clauses = append(clauses, criterion.condition+" ? AND ?")
 			args = append(args, criterion.value, criterion.secondValue)
 		} else if criterion.listValue {
 			values := criterion.value.([]interface{})
@@ -349,7 +349,7 @@ func (c *Criteria) buildClause() (string, []interface{}) {
 			for j := range placeholders {
 				placeholders[j] = "?"
 			}
-			clauses = append(clauses, criterion.condition + " (" + strings.Join(placeholders, ", ") + ")")
+			clauses = append(clauses, criterion.condition+" ("+strings.Join(placeholders, ", ")+")")
 			args = append(args, values...)
 		}
 	}

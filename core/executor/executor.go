@@ -17,9 +17,9 @@ type Executor interface {
 
 // SimpleExecutor 简单执行器
 type SimpleExecutor struct {
-	configuration    *config.Configuration
-	parameterBinder  binding.ParameterBinder
-	resultMapper     mapping.ResultMapper
+	configuration   *config.Configuration
+	parameterBinder binding.ParameterBinder
+	resultMapper    mapping.ResultMapper
 }
 
 // NewSimpleExecutor 创建简单执行器

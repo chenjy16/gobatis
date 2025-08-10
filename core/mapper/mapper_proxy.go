@@ -22,8 +22,6 @@ type MapperProxy struct {
 	mapperType reflect.Type
 }
 
-
-
 // NewMapperProxy 创建 Mapper 代理
 func NewMapperProxy(session SqlSession, mapperType reflect.Type) interface{} {
 	proxy := &MapperProxy{
@@ -50,11 +48,11 @@ func (p *proxyImpl) GetUser(id int) (interface{}, error) {
 	method, _ := p.proxy.mapperType.MethodByName("GetUser")
 	args := []reflect.Value{reflect.ValueOf(id)}
 	results := p.proxy.invoke("GetUser", method.Type, args)
-	
+
 	if len(results) >= 2 {
 		var result interface{}
 		var err error
-		
+
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
 				result = results[0].Interface()
@@ -62,7 +60,7 @@ func (p *proxyImpl) GetUser(id int) (interface{}, error) {
 		} else if results[0].IsValid() {
 			result = results[0].Interface()
 		}
-		
+
 		if results[1].IsValid() && (results[1].Kind() == reflect.Ptr || results[1].Kind() == reflect.Interface || results[1].Kind() == reflect.Slice || results[1].Kind() == reflect.Map || results[1].Kind() == reflect.Chan || results[1].Kind() == reflect.Func) {
 			if !results[1].IsNil() {
 				err = results[1].Interface().(error)
@@ -70,10 +68,10 @@ func (p *proxyImpl) GetUser(id int) (interface{}, error) {
 		} else if results[1].IsValid() {
 			err = results[1].Interface().(error)
 		}
-		
+
 		return result, err
 	}
-	
+
 	return nil, nil
 }
 
@@ -82,11 +80,11 @@ func (p *proxyImpl) FindUsers() ([]interface{}, error) {
 	method, _ := p.proxy.mapperType.MethodByName("FindUsers")
 	args := []reflect.Value{}
 	results := p.proxy.invoke("FindUsers", method.Type, args)
-	
+
 	if len(results) >= 2 {
 		var result []interface{}
 		var err error
-		
+
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
 				result = results[0].Interface().([]interface{})
@@ -94,7 +92,7 @@ func (p *proxyImpl) FindUsers() ([]interface{}, error) {
 		} else if results[0].IsValid() {
 			result = results[0].Interface().([]interface{})
 		}
-		
+
 		if results[1].IsValid() && (results[1].Kind() == reflect.Ptr || results[1].Kind() == reflect.Interface || results[1].Kind() == reflect.Slice || results[1].Kind() == reflect.Map || results[1].Kind() == reflect.Chan || results[1].Kind() == reflect.Func) {
 			if !results[1].IsNil() {
 				err = results[1].Interface().(error)
@@ -102,10 +100,10 @@ func (p *proxyImpl) FindUsers() ([]interface{}, error) {
 		} else if results[1].IsValid() {
 			err = results[1].Interface().(error)
 		}
-		
+
 		return result, err
 	}
-	
+
 	return nil, nil
 }
 
@@ -114,11 +112,11 @@ func (p *proxyImpl) InsertUser(user interface{}) (int64, error) {
 	method, _ := p.proxy.mapperType.MethodByName("InsertUser")
 	args := []reflect.Value{reflect.ValueOf(user)}
 	results := p.proxy.invoke("InsertUser", method.Type, args)
-	
+
 	if len(results) >= 2 {
 		var result int64
 		var err error
-		
+
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
 				result = results[0].Interface().(int64)
@@ -126,7 +124,7 @@ func (p *proxyImpl) InsertUser(user interface{}) (int64, error) {
 		} else if results[0].IsValid() {
 			result = results[0].Interface().(int64)
 		}
-		
+
 		if results[1].IsValid() && (results[1].Kind() == reflect.Ptr || results[1].Kind() == reflect.Interface || results[1].Kind() == reflect.Slice || results[1].Kind() == reflect.Map || results[1].Kind() == reflect.Chan || results[1].Kind() == reflect.Func) {
 			if !results[1].IsNil() {
 				err = results[1].Interface().(error)
@@ -134,10 +132,10 @@ func (p *proxyImpl) InsertUser(user interface{}) (int64, error) {
 		} else if results[1].IsValid() {
 			err = results[1].Interface().(error)
 		}
-		
+
 		return result, err
 	}
-	
+
 	return 0, nil
 }
 
@@ -146,11 +144,11 @@ func (p *proxyImpl) UpdateUser(user interface{}) (int64, error) {
 	method, _ := p.proxy.mapperType.MethodByName("UpdateUser")
 	args := []reflect.Value{reflect.ValueOf(user)}
 	results := p.proxy.invoke("UpdateUser", method.Type, args)
-	
+
 	if len(results) >= 2 {
 		var result int64
 		var err error
-		
+
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
 				result = results[0].Interface().(int64)
@@ -158,7 +156,7 @@ func (p *proxyImpl) UpdateUser(user interface{}) (int64, error) {
 		} else if results[0].IsValid() {
 			result = results[0].Interface().(int64)
 		}
-		
+
 		if results[1].IsValid() && (results[1].Kind() == reflect.Ptr || results[1].Kind() == reflect.Interface || results[1].Kind() == reflect.Slice || results[1].Kind() == reflect.Map || results[1].Kind() == reflect.Chan || results[1].Kind() == reflect.Func) {
 			if !results[1].IsNil() {
 				err = results[1].Interface().(error)
@@ -166,10 +164,10 @@ func (p *proxyImpl) UpdateUser(user interface{}) (int64, error) {
 		} else if results[1].IsValid() {
 			err = results[1].Interface().(error)
 		}
-		
+
 		return result, err
 	}
-	
+
 	return 0, nil
 }
 
@@ -178,11 +176,11 @@ func (p *proxyImpl) DeleteUser(id int) (int64, error) {
 	method, _ := p.proxy.mapperType.MethodByName("DeleteUser")
 	args := []reflect.Value{reflect.ValueOf(id)}
 	results := p.proxy.invoke("DeleteUser", method.Type, args)
-	
+
 	if len(results) >= 2 {
 		var result int64
 		var err error
-		
+
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
 				result = results[0].Interface().(int64)
@@ -190,7 +188,7 @@ func (p *proxyImpl) DeleteUser(id int) (int64, error) {
 		} else if results[0].IsValid() {
 			result = results[0].Interface().(int64)
 		}
-		
+
 		if results[1].IsValid() && (results[1].Kind() == reflect.Ptr || results[1].Kind() == reflect.Interface || results[1].Kind() == reflect.Slice || results[1].Kind() == reflect.Map || results[1].Kind() == reflect.Chan || results[1].Kind() == reflect.Func) {
 			if !results[1].IsNil() {
 				err = results[1].Interface().(error)
@@ -198,10 +196,10 @@ func (p *proxyImpl) DeleteUser(id int) (int64, error) {
 		} else if results[1].IsValid() {
 			err = results[1].Interface().(error)
 		}
-		
+
 		return result, err
 	}
-	
+
 	return 0, nil
 }
 
@@ -210,7 +208,7 @@ func (p *proxyImpl) UnsupportedMethod() error {
 	method, _ := p.proxy.mapperType.MethodByName("UnsupportedMethod")
 	args := []reflect.Value{}
 	results := p.proxy.invoke("UnsupportedMethod", method.Type, args)
-	
+
 	if len(results) >= 1 {
 		if results[0].IsValid() && (results[0].Kind() == reflect.Ptr || results[0].Kind() == reflect.Interface || results[0].Kind() == reflect.Slice || results[0].Kind() == reflect.Map || results[0].Kind() == reflect.Chan || results[0].Kind() == reflect.Func) {
 			if !results[0].IsNil() {
@@ -220,11 +218,9 @@ func (p *proxyImpl) UnsupportedMethod() error {
 			return results[0].Interface().(error)
 		}
 	}
-	
+
 	return nil
 }
-
-
 
 // invoke 调用方法
 func (mp *MapperProxy) invoke(methodName string, methodType reflect.Type, args []reflect.Value) []reflect.Value {
@@ -317,7 +313,7 @@ func (mp *MapperProxy) getStatementId(methodName string) string {
 	// 获取接口的包路径和名称
 	pkgPath := mp.mapperType.PkgPath()
 	typeName := mp.mapperType.Name()
-	
+
 	// 如果有包路径，提取包名
 	if pkgPath != "" {
 		// 从包路径中提取最后一个部分作为包名
@@ -329,7 +325,7 @@ func (mp *MapperProxy) getStatementId(methodName string) string {
 			return pkgName + "." + typeName + "." + methodName
 		}
 	}
-	
+
 	// 如果没有包路径，直接使用接口名.方法名
 	return typeName + "." + methodName
 }
@@ -337,7 +333,7 @@ func (mp *MapperProxy) getStatementId(methodName string) string {
 // isSelectMethod 判断是否为查询方法
 func (mp *MapperProxy) isSelectMethod(methodName string, methodType reflect.Type) bool {
 	methodNameLower := strings.ToLower(methodName)
-	
+
 	// 根据方法名判断
 	if strings.HasPrefix(methodNameLower, "get") ||
 		strings.HasPrefix(methodNameLower, "find") ||
@@ -400,17 +396,17 @@ func getMethodName() string {
 	if !ok {
 		return ""
 	}
-	
+
 	fn := runtime.FuncForPC(pc)
 	if fn == nil {
 		return ""
 	}
-	
+
 	fullName := fn.Name()
 	parts := strings.Split(fullName, ".")
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
 	}
-	
+
 	return ""
 }

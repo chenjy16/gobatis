@@ -23,7 +23,7 @@ func NewPluginManager() *PluginManager {
 func (pm *PluginManager) AddPlugin(plugin Plugin) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
-	
+
 	pm.plugins = append(pm.plugins, plugin)
 	// 按优先级排序
 	sort.Slice(pm.plugins, func(i, j int) bool {
@@ -35,7 +35,7 @@ func (pm *PluginManager) AddPlugin(plugin Plugin) {
 func (pm *PluginManager) RemovePlugin(pluginType reflect.Type) bool {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
-	
+
 	for i, plugin := range pm.plugins {
 		if reflect.TypeOf(plugin) == pluginType {
 			pm.plugins = append(pm.plugins[:i], pm.plugins[i+1:]...)
@@ -49,7 +49,7 @@ func (pm *PluginManager) RemovePlugin(pluginType reflect.Type) bool {
 func (pm *PluginManager) GetPlugins() []Plugin {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
-	
+
 	// 返回插件副本，避免并发修改
 	pluginsCopy := make([]Plugin, len(pm.plugins))
 	copy(pluginsCopy, pm.plugins)
@@ -98,10 +98,10 @@ func (pm *PluginManager) InterceptMethod(target interface{}, method reflect.Meth
 	if len(plugins) == 0 {
 		return proceed()
 	}
-	
+
 	// 创建新的线程安全插件链
 	chain := NewPluginChain(plugins, target)
-	
+
 	// 创建调用信息
 	invocation := &Invocation{
 		Target:      target,
@@ -112,7 +112,7 @@ func (pm *PluginManager) InterceptMethod(target interface{}, method reflect.Meth
 		Proceed:     proceed,
 		Context:     NewInvocationContext(),
 	}
-	
+
 	// 执行插件链
 	return chain.Proceed(invocation)
 }
@@ -160,7 +160,7 @@ func (pr *PluginRegistry) RemoveManager(name string) bool {
 func (pr *PluginRegistry) GetAllManagers() map[string]*PluginManager {
 	pr.mutex.RLock()
 	defer pr.mutex.RUnlock()
-	
+
 	// 返回副本
 	result := make(map[string]*PluginManager)
 	for name, manager := range pr.managers {
@@ -183,8 +183,6 @@ func NewPluginBuilder() *PluginBuilder {
 		manager: NewPluginManager(),
 	}
 }
-
-
 
 // WithPagination 添加分页插件
 func (pb *PluginBuilder) WithPagination() *PluginBuilder {

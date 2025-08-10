@@ -10,8 +10,8 @@ import (
 
 // MockExecutor 模拟执行器
 type MockExecutor struct {
-	queryResult []interface{}
-	queryError  error
+	queryResult  []interface{}
+	queryError   error
 	updateResult int64
 	updateError  error
 }

@@ -49,8 +49,6 @@ func TestPaginationPlugin(t *testing.T) {
 	}
 }
 
-
-
 // TestPluginManager 测试插件管理器
 func TestPluginManager(t *testing.T) {
 	manager := NewPluginManager()
@@ -112,7 +110,7 @@ func TestPluginBuilder(t *testing.T) {
 	}
 
 	plugins := manager.GetPlugins()
-	
+
 	// 验证插件类型
 	if _, ok := plugins[0].(*PaginationPlugin); !ok {
 		t.Error("Expected plugin to be PaginationPlugin")
@@ -132,7 +130,7 @@ func TestPluginRegistry(t *testing.T) {
 	// 测试注册管理器
 	newManager := NewPluginManager()
 	registry.RegisterManager("custom", newManager)
-	
+
 	retrievedManager, exists := registry.GetManager("custom")
 	if !exists || retrievedManager != newManager {
 		t.Error("Expected registered manager to be retrieved")
@@ -180,11 +178,11 @@ func TestPageRequest(t *testing.T) {
 	// 测试偏移量计算
 	plugin := NewPaginationPlugin()
 	extractedReq := plugin.extractPageRequest([]interface{}{pageReq})
-	
+
 	if extractedReq == nil {
 		t.Error("Expected to extract page request")
 	}
-	
+
 	expectedOffset := (2 - 1) * 20
 	if extractedReq.Offset != expectedOffset {
 		t.Errorf("Expected offset %d, got %d", expectedOffset, extractedReq.Offset)
@@ -198,7 +196,7 @@ func TestPaginationSQLInjectionPrevention(t *testing.T) {
 	// 测试安全的列名
 	validColumns := []string{
 		"name",
-		"user_id", 
+		"user_id",
 		"table.column",
 		"_private",
 		"column123",
@@ -230,7 +228,7 @@ func TestPaginationSQLInjectionPrevention(t *testing.T) {
 
 	// 测试buildPagedSQL对不安全排序字段的处理
 	originalSQL := "SELECT * FROM users WHERE status = 'active'"
-	
+
 	// 不安全的排序字段应该被忽略
 	unsafePageReq := &PageRequest{
 		Page:    1,
@@ -241,12 +239,12 @@ func TestPaginationSQLInjectionPrevention(t *testing.T) {
 	}
 
 	pagedSQL := plugin.buildPagedSQL(originalSQL, unsafePageReq)
-	
+
 	// 不应该包含不安全的排序字段
 	if strings.Contains(pagedSQL, "DROP TABLE") {
 		t.Error("Unsafe SQL injection attempt was not prevented")
 	}
-	
+
 	// 应该只包含LIMIT子句
 	if !strings.Contains(pagedSQL, "LIMIT 10 OFFSET 0") {
 		t.Error("Expected LIMIT clause in paged SQL")
@@ -272,11 +270,11 @@ func TestPaginationParameterValidation(t *testing.T) {
 
 	// 测试无效的分页参数
 	invalidRequests := []*PageRequest{
-		{Page: 0, Size: 10},      // 页码为0
-		{Page: -1, Size: 10},     // 负页码
-		{Page: 1, Size: 0},       // 每页大小为0
-		{Page: 1, Size: -10},     // 负的每页大小
-		{Page: 1, Size: 1001},    // 每页大小过大
+		{Page: 0, Size: 10},       // 页码为0
+		{Page: -1, Size: 10},      // 负页码
+		{Page: 1, Size: 0},        // 每页大小为0
+		{Page: 1, Size: -10},      // 负的每页大小
+		{Page: 1, Size: 1001},     // 每页大小过大
 		{Page: 1000001, Size: 10}, // 页码过大
 	}
 
